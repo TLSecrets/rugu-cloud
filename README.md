@@ -114,6 +114,8 @@ UPDATE users SET is_admin = 1 WHERE username = '你的用户名';
 
 ## 六、从如故 Vue 题库迁移
 
+详见 [docs/MIGRATION.md](docs/MIGRATION.md)。
+
 如故导出的 `public/generated/generated-*.json` 形如：
 
 ```json
