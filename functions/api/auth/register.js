@@ -6,6 +6,7 @@ import { hashPassword } from '../../lib/password.js'
 import { makeId } from '../../lib/ids.js'
 import { one, run } from '../../lib/db.js'
 import { createSession, buildSessionCookie, sessionTtlSeconds } from '../../lib/auth.js'
+import { DEFAULT_SETTINGS } from '../../lib/settings.js'
 import { json, error, readJson } from '../../lib/respond.js'
 
 export async function onRequestPost(context) {
@@ -45,6 +46,16 @@ export async function onRequestPost(context) {
      VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
     [bankId, id, '我的题库', '注册后自动创建的私有题库', '[]', now, now],
   )
+
+  try {
+    await run(
+      env.DB,
+      'INSERT INTO settings (owner_user_id, data_json, updated_at) VALUES (?, ?, ?)',
+      [id, JSON.stringify(DEFAULT_SETTINGS), now],
+    )
+  } catch {
+    // settings 表尚未迁移时仍允许注册；登录后用默认设置
+  }
 
   const token = await createSession(env, { id, username, is_admin: 0 })
   const secure = new URL(request.url).protocol === 'https:'

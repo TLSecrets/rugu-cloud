@@ -2,33 +2,9 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>登录 · 如故云题库</title>
-  <link rel="stylesheet" href="/css/app.css" />
+  <meta http-equiv="refresh" content="0;url=/#/login" />
+  <title>跳转登录…</title>
+  <script>location.replace('/#/login')</script>
 </head>
-<body>
-  <header class="topbar">
-    <div class="topbar__brand">如故云题库</div>
-  </header>
-  <main class="wrap">
-    <div class="card" style="max-width: 26rem; margin-inline: auto;">
-      <h1 id="title">登录</h1>
-      <p class="muted">账号密码保存在 Cloudflare D1；会话写入 KV Cookie。</p>
-      <div id="flash" class="flash" hidden></div>
-      <form id="form">
-        <label class="field"><span>用户名</span>
-          <input id="username" name="username" autocomplete="username" required minlength="2" maxlength="32" />
-        </label>
-        <label class="field"><span>密码</span>
-          <input id="password" name="password" type="password" autocomplete="current-password" required minlength="6" />
-        </label>
-        <div class="btn-row">
-          <button class="btn btn--primary" id="submit" type="submit">登录</button>
-          <button class="btn" id="modeToggle" type="button">没有账号？去注册</button>
-        </div>
-      </form>
-    </div>
-  </main>
-  <script type="module" src="/js/auth.js"></script>
-</body>
+<body><p><a href="/#/login">前往登录</a></p></body>
 </html>

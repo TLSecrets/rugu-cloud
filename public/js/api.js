@@ -1,5 +1,5 @@
 /**
- * 前端 API 封装：同源请求，自动携带 Cookie（凭证）
+ * 前端 API 封装：同源请求，自动携带 Cookie
  */
 async function request(path, options = {}) {
   const res = await fetch(path, {
@@ -50,16 +50,49 @@ export const api = {
     request(`/api/questions/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   clearQuestions: (bankId) =>
     request('/api/questions/clear', { method: 'POST', body: JSON.stringify({ bankId }) }),
-}
+  bulkQuestions: (body) =>
+    request('/api/questions/bulk', { method: 'POST', body: JSON.stringify(body) }),
 
-/** 未登录则跳到登录页 */
-export async function requireLogin() {
-  try {
-    const data = await api.me()
-    return data.user
-  } catch {
-    const next = encodeURIComponent(location.pathname + location.search)
-    location.href = `/login.html?next=${next}`
-    return null
-  }
+  getSettings: () => request('/api/settings'),
+  patchSettings: (body) =>
+    request('/api/settings', { method: 'PATCH', body: JSON.stringify(body) }),
+
+  listFavorites: () => request('/api/favorites'),
+  addFavorite: (body) =>
+    request('/api/favorites', { method: 'POST', body: JSON.stringify(body) }),
+  removeFavorite: (questionId) =>
+    request(`/api/favorites?questionId=${encodeURIComponent(questionId)}`, { method: 'DELETE' }),
+
+  listNotes: () => request('/api/notes'),
+  upsertNote: (body) =>
+    request('/api/notes', { method: 'POST', body: JSON.stringify(body) }),
+  removeNote: (questionId) =>
+    request(`/api/notes?questionId=${encodeURIComponent(questionId)}`, { method: 'DELETE' }),
+
+  listWrongs: (includeRemoved = false) =>
+    request(`/api/wrongs${includeRemoved ? '?includeRemoved=1' : ''}`),
+  recordWrong: (body) =>
+    request('/api/wrongs', { method: 'POST', body: JSON.stringify(body) }),
+  patchWrong: (body) =>
+    request('/api/wrongs', { method: 'PATCH', body: JSON.stringify(body) }),
+  removeWrong: (questionId) =>
+    request(`/api/wrongs?questionId=${encodeURIComponent(questionId)}`, { method: 'DELETE' }),
+
+  listTags: () => request('/api/tags'),
+  addTag: (name) =>
+    request('/api/tags', { method: 'POST', body: JSON.stringify({ name }) }),
+  removeTag: (name) =>
+    request(`/api/tags?name=${encodeURIComponent(name)}`, { method: 'DELETE' }),
+
+  search: (q, bankId) => {
+    const params = new URLSearchParams({ q })
+    if (bankId) params.set('bankId', bankId)
+    return request(`/api/search?${params}`)
+  },
+
+  learningClear: (body) =>
+    request('/api/learning/clear', { method: 'POST', body: JSON.stringify(body || {}) }),
+
+  aiChat: (body) =>
+    request('/api/ai/chat', { method: 'POST', body: JSON.stringify(body) }),
 }

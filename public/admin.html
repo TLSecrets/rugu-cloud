@@ -2,85 +2,9 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>题库管理 · 如故云题库</title>
-  <link rel="stylesheet" href="/css/app.css" />
+  <meta http-equiv="refresh" content="0;url=/#/banks" />
+  <title>跳转题库…</title>
+  <script>location.replace('/#/banks')</script>
 </head>
-<body>
-  <header class="topbar">
-    <div class="topbar__brand">如故云题库</div>
-    <nav class="topbar__nav">
-      <a href="/index.html">练习</a>
-      <span class="topbar__user" id="userLabel"></span>
-      <button type="button" class="btn" id="btnLogout">退出</button>
-    </nav>
-  </header>
-
-  <main class="wrap">
-    <h1>题库管理</h1>
-    <p class="muted">创建私有题库；管理员可创建公共题库。支持从如故 JSON 批量导入。</p>
-    <div id="flash" class="flash" hidden></div>
-
-    <section class="card">
-      <h2>我的题库</h2>
-      <div class="btn-row">
-        <button type="button" class="btn btn--primary" id="btnCreateBank">新建题库</button>
-      </div>
-      <ul class="list" id="bankList" style="margin-top: 1rem;"></ul>
-    </section>
-
-    <section class="card">
-      <h2>题目</h2>
-      <label class="field"><span>当前题库</span>
-        <select id="bankSelect"></select>
-      </label>
-      <div class="btn-row">
-        <button type="button" class="btn" id="btnImport">导入 JSON</button>
-        <button type="button" class="btn btn--danger" id="btnClear">清空题目</button>
-        <input type="file" id="importFile" accept="application/json,.json" hidden />
-      </div>
-      <ul class="list" id="questionList" style="margin-top: 1rem;"></ul>
-    </section>
-
-    <section class="card" id="editor">
-      <h2 id="formTitle">新增题目</h2>
-      <label class="field"><span>题型</span>
-        <select id="qType">
-          <option value="single">单选</option>
-          <option value="multiple">多选</option>
-          <option value="judge">判断</option>
-          <option value="blank">填空</option>
-          <option value="short">简答</option>
-        </select>
-      </label>
-      <label class="field"><span>题干</span>
-        <textarea id="qStem" rows="4"></textarea>
-      </label>
-      <div id="optBlock">
-        <label class="field"><span>选项（每行：Key|内容，如 A|北京）</span>
-          <textarea id="qOptions" rows="5" placeholder="A|选项一&#10;B|选项二"></textarea>
-        </label>
-      </div>
-      <div id="keysBlock">
-        <label class="field"><span>正确答案 Key（多选用逗号分隔）</span>
-          <input id="qAnswerKeys" placeholder="A 或 A,C" />
-        </label>
-      </div>
-      <div id="textsBlock" hidden>
-        <label class="field"><span>参考答案（填空每行一空；可用 | 分隔同义答案）</span>
-          <textarea id="qAnswerTexts" rows="3"></textarea>
-        </label>
-      </div>
-      <label class="field"><span>解析（可选）</span>
-        <textarea id="qExplanation" rows="3"></textarea>
-      </label>
-      <div class="btn-row">
-        <button type="button" class="btn btn--primary" id="btnSave">保存</button>
-        <button type="button" class="btn" id="btnResetForm">清空表单</button>
-      </div>
-    </section>
-  </main>
-
-  <script type="module" src="/js/admin.js"></script>
-</body>
+<body><p><a href="/#/banks">前往题库</a></p></body>
 </html>

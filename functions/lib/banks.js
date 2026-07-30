@@ -43,6 +43,7 @@ export function mapBank(row) {
     name: row.name,
     description: row.description || '',
     isPublic: Number(row.is_public) === 1,
+    source: row.source || 'import',
     tags,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
