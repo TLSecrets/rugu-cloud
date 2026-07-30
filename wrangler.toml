@@ -1,0 +1,16 @@
+# Cloudflare Pages + D1 + KV 本地/部署绑定配置
+# 部署后还须在 Pages 控制台把同名绑定挂到项目上
+
+name = "rugu-cloud"
+compatibility_date = "2024-09-23"
+pages_build_output_dir = "public"
+
+# 把下面 database_id / id 换成你在 Cloudflare 控制台看到的真实 ID
+[[d1_databases]]
+binding = "DB"
+database_name = "rugu-cloud-db"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "REPLACE_WITH_YOUR_KV_NAMESPACE_ID"

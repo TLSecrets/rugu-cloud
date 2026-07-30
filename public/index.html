@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>练习 · 如故云题库</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar__brand">如故云题库</div>
+    <nav class="topbar__nav">
+      <a href="/admin.html">题库管理</a>
+      <span class="topbar__user" id="userLabel"></span>
+      <button type="button" class="btn" id="btnLogout">退出</button>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <h1>练习</h1>
+    <p class="muted">支持单选、多选、判断、填空、简答。登录后可读公共题库与自己的私有题库。</p>
+
+    <section class="card">
+      <label class="field"><span>选择题库</span>
+        <select id="bankSelect"></select>
+      </label>
+      <label class="field" style="grid-template-columns: auto 1fr; align-items: center;">
+        <input type="checkbox" id="shuffle" />
+        <span>打乱题目顺序</span>
+      </label>
+      <div class="btn-row">
+        <button type="button" class="btn btn--primary" id="btnStart">开始练习</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div id="meta" class="muted">请选择题库并开始练习</div>
+      <div id="question"></div>
+      <div class="btn-row">
+        <button type="button" class="btn" id="btnPrev" disabled>上一题</button>
+        <button type="button" class="btn btn--primary" id="btnGrade" disabled>提交本题</button>
+        <button type="button" class="btn" id="btnNext" disabled>下一题</button>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/js/quiz.js"></script>
+</body>
+</html>
