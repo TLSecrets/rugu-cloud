@@ -7,6 +7,7 @@ import { requireUser } from '../lib/auth.js'
 import { all, one, run } from '../lib/db.js'
 import { makeId } from '../lib/ids.js'
 import { json, error, readJson } from '../lib/respond.js'
+import { assertReadableQuestion } from '../lib/learningAccess.js'
 
 function mapNote(row) {
   return {
@@ -46,6 +47,10 @@ export async function onRequestPost(context) {
   if (!questionId) return error('缺少 questionId')
   if (!bankId) return error('缺少 bankId')
 
+  const access = await assertReadableQuestion(env.DB, session, questionId, bankId)
+  if (!access.ok) return access.response
+  const resolvedBankId = access.question.bank_id
+
   const now = Date.now()
   const existing = await one(
     env.DB,
@@ -57,14 +62,14 @@ export async function onRequestPost(context) {
     await run(
       env.DB,
       'UPDATE notes SET bank_id = ?, content = ?, updated_at = ? WHERE id = ?',
-      [bankId, content, now, existing.id],
+      [resolvedBankId, content, now, existing.id],
     )
     return json({
       ok: true,
       note: mapNote({
         id: existing.id,
         question_id: questionId,
-        bank_id: bankId,
+        bank_id: resolvedBankId,
         content,
         created_at: existing.created_at,
         updated_at: now,
@@ -77,7 +82,7 @@ export async function onRequestPost(context) {
     env.DB,
     `INSERT INTO notes (id, owner_user_id, question_id, bank_id, content, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-    [id, session.userId, questionId, bankId, content, now, now],
+    [id, session.userId, questionId, resolvedBankId, content, now, now],
   )
   return json(
     {
@@ -85,7 +90,7 @@ export async function onRequestPost(context) {
       note: mapNote({
         id,
         question_id: questionId,
-        bank_id: bankId,
+        bank_id: resolvedBankId,
         content,
         created_at: now,
         updated_at: now,

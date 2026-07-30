@@ -7,6 +7,7 @@ import { requireUser } from '../lib/auth.js'
 import { all, one, run } from '../lib/db.js'
 import { makeId } from '../lib/ids.js'
 import { json, error, readJson } from '../lib/respond.js'
+import { assertReadableQuestion } from '../lib/learningAccess.js'
 
 function mapFavorite(row) {
   return {
@@ -58,6 +59,10 @@ export async function onRequestPost(context) {
   if (!questionId) return error('缺少 questionId')
   if (!bankId) return error('缺少 bankId')
 
+  const access = await assertReadableQuestion(env.DB, session, questionId, bankId)
+  if (!access.ok) return access.response
+  const resolvedBankId = access.question.bank_id
+
   const now = Date.now()
   const existing = await one(
     env.DB,
@@ -69,14 +74,14 @@ export async function onRequestPost(context) {
     await run(
       env.DB,
       'UPDATE favorites SET bank_id = ? WHERE id = ?',
-      [bankId, existing.id],
+      [resolvedBankId, existing.id],
     )
     return json({
       ok: true,
       favorite: mapFavorite({
         id: existing.id,
         question_id: questionId,
-        bank_id: bankId,
+        bank_id: resolvedBankId,
         created_at: now,
       }),
     })
@@ -87,7 +92,7 @@ export async function onRequestPost(context) {
     env.DB,
     `INSERT INTO favorites (id, owner_user_id, question_id, bank_id, created_at)
      VALUES (?, ?, ?, ?, ?)`,
-    [id, session.userId, questionId, bankId, now],
+    [id, session.userId, questionId, resolvedBankId, now],
   )
   return json(
     {
@@ -95,7 +100,7 @@ export async function onRequestPost(context) {
       favorite: mapFavorite({
         id,
         question_id: questionId,
-        bank_id: bankId,
+        bank_id: resolvedBankId,
         created_at: now,
       }),
     },

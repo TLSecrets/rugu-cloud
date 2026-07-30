@@ -10,13 +10,13 @@ export function renderLogin(el, ctx) {
       <div class="boot">
         <div class="card login-card">
           <h1 class="page-header__title">${mode === 'login' ? '登录' : '注册'}</h1>
-          <p class="page-header__desc">账号数据保存在 Cloudflare D1，会话写入 Cookie。登录后同步收藏、笔记与错题。</p>
+          <p class="page-header__desc">账号数据保存在 Cloudflare D1，会话 Cookie（HttpOnly）。注册密码至少 10 位。</p>
           <div id="loginFlash" class="flash" hidden></div>
           <form id="loginForm">
             <label class="field"><span>用户名</span>
               <input id="username" autocomplete="username" required minlength="2" maxlength="32" /></label>
             <label class="field"><span>密码</span>
-              <input id="password" type="password" autocomplete="${mode === 'login' ? 'current-password' : 'new-password'}" required minlength="6" /></label>
+              <input id="password" type="password" autocomplete="${mode === 'login' ? 'current-password' : 'new-password'}" required minlength="${mode === 'register' ? '10' : '1'}" /></label>
             <div class="btn-row">
               <button class="btn btn--primary" type="submit">${mode === 'login' ? '登录' : '注册并登录'}</button>
               <button class="btn btn--ghost" type="button" id="modeToggle">${mode === 'login' ? '没有账号？去注册' : '已有账号？去登录'}</button>

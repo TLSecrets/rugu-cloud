@@ -2,7 +2,7 @@
 
 独立于 Vue「如故」的在线题库：Cloudflare Pages（原生 SPA）+ Pages Functions（API）+ D1（数据）+ KV（会话）。无 IndexedDB。
 
-线上：https://rugu-cloud.pages.dev · 测试账号见 [docs/TEST_ACCOUNTS.md](docs/TEST_ACCOUNTS.md)
+线上：https://rugu-cloud.pages.dev
 
 题型：`single` | `multiple` | `judge` | `blank` | `short`
 
@@ -12,12 +12,12 @@
 
 | 能力 | 说明 |
 |------|------|
-| 注册 / 登录 | PBKDF2 存 D1；会话 Cookie → KV |
-| SPA 壳层 | 侧栏 / 底栏 / 主题 / 字号，hash 路由 `#/…` |
-| 题库 | 私有库 + 公共库（管理员可写） |
-| 练习 / 考试 | 判分、收藏、错题、笔记 |
-| 搜索 / 导入导出 | 题干搜索、JSON 导入导出、AI 辅助（可选） |
-| 设置 / 手册 | 主题、字号、判分选项、使用说明 |
+| 注册 / 登录 | PBKDF2 存 D1；会话 Cookie（HttpOnly / SameSite）→ KV |
+| SPA 壳层 | 单根状态机 + 统一导航配置，hash 路由 `#/…` |
+| 题库 | 私有库 + 公共库（管理员可写，后端 ACL） |
+| 练习 / 考试 | 判分、收藏、错题、笔记（按用户隔离） |
+| 导入导出 | JSON bulk（条数/体积上限） |
+| 设置 | 主题等服务端持久化 + 本地缓存防闪烁 |
 
 ---
 
@@ -28,43 +28,43 @@ npm install
 npx wrangler login
 npm run db:local          # 或 node scripts/apply-local-schema.mjs
 npm run dev               # http://127.0.0.1:8788
-npm run seed              # 注册 demo/alice/bob/admin
+npm run seed              # 仅 localhost
 npm run smoke
+npm run smoke:isolation
 ```
+
+本地测试账号说明见 [docs/TEST_ACCOUNTS.md](docs/TEST_ACCOUNTS.md)（不含生产口令）。
 
 ---
 
 ## 生产部署
 
-线上项目用 **Wrangler 直传**（`rugu-cloud.pages.dev`）。推送 GitHub 不会自动更新 Cloudflare Pages。
-
 ```bash
-npx wrangler login          # 本机交互登录（token 过期时必做）
-npm run deploy:prod         # 远端 schema-extend + pages deploy + 种子账号
+npx wrangler login
+npm run deploy:prod       # schema-extend + pages deploy（不 seed）
 ```
 
-或分步：
+在 Cloudflare Pages → Settings → Environment variables 设置：
 
-```bash
-npm run db:extend
-npm run db:migrate-cols     # 列已存在可忽略报错
-npx wrangler pages deploy public --project-name=rugu-cloud --commit-dirty=true
-BASE_URL=https://rugu-cloud.pages.dev npm run seed
-```
-
-D1 Console 设管理员：
-
-```sql
-UPDATE users SET is_admin = 1 WHERE username = 'admin';
-```
+- `ALLOW_REGISTER=false`（关闭开放注册；用 `POST /api/admin/users` 建号）
 
 绑定：D1 `DB` → `rugu-cloud-db`，KV `SESSIONS`。
 
+清理历史演示用户名（可选）：
+
+```bash
+node scripts/purge-test-users.mjs --remote
+```
+
 ---
 
-## 从如故 Vue 迁移
+## 安全要点
 
-见 [docs/MIGRATION.md](docs/MIGRATION.md)。也可在「导入导出」页粘贴 JSON。
+- 密码：PBKDF2-SHA256 + 盐；策略 ≥10 位，拒绝「用户名+1234」模板
+- 会话：KV 存储；登出删除；每次请求从 D1 刷新 `is_admin`
+- API：`requireUser` / `requireAdmin` + 题库 ACL + 学习数据 `owner_user_id`
+- 中间件：安全头、CORS 白名单、登录/注册限流
+- 审计：`audit_logs`（bulk / 清学习数据 / 建公共库 / 管理员建号）
 
 ---
 
@@ -72,11 +72,11 @@ UPDATE users SET is_admin = 1 WHERE username = 'admin';
 
 ```
 rugu-cloud/
-  schema.sql / schema-extend.sql / schema-migrate.sql
+  schema.sql / schema-extend.sql
   wrangler.toml
-  public/                 # SPA（index.html + css/ + js/）
-  functions/api/          # auth, banks, questions, settings, favorites…
-  docs/TEST_ACCOUNTS.md
+  public/                 # SPA
+  functions/api/          # auth, banks, questions, admin, …
+  docs/TEST_ACCOUNTS.md   # 仅本地说明
 ```
 
 路由：`#/` `#/banks` `#/practice` `#/exam` `#/wrong` `#/search` `#/favorites` `#/notes` `#/import-export` `#/guide` `#/settings` `#/login`

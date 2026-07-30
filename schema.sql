@@ -105,3 +105,14 @@ CREATE TABLE IF NOT EXISTS settings (
   updated_at INTEGER NOT NULL,
   FOREIGN KEY (owner_user_id) REFERENCES users(id)
 );
+
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id TEXT PRIMARY KEY,
+  actor_user_id TEXT,
+  action TEXT NOT NULL,
+  target TEXT,
+  ip TEXT,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs(actor_user_id);

@@ -1,41 +1,27 @@
 /**
- * POST /api/auth/register
- * body: { username, password }
- * 受 env.ALLOW_REGISTER 控制（缺省 true；生产建议 false）
+ * POST /api/admin/users —— 管理员创建用户
+ * body: { username, password, isAdmin? }
  */
+import { requireAdmin } from '../../lib/auth.js'
 import { hashPassword } from '../../lib/password.js'
 import { validatePassword } from '../../lib/passwordPolicy.js'
 import { makeId } from '../../lib/ids.js'
 import { one, run } from '../../lib/db.js'
-import { createSession, buildSessionCookie, sessionTtlSeconds } from '../../lib/auth.js'
 import { DEFAULT_SETTINGS } from '../../lib/settings.js'
 import { json, error, readJson } from '../../lib/respond.js'
-import { clientIp, rateLimit } from '../../lib/security.js'
-
-function registerAllowed(env) {
-  const v = env.ALLOW_REGISTER
-  if (v === undefined || v === null || v === '') return true
-  return String(v).toLowerCase() !== 'false' && v !== '0'
-}
+import { writeAudit } from '../../lib/audit.js'
 
 export async function onRequestPost(context) {
   const { request, env } = context
-
-  if (!registerAllowed(env)) {
-    return error('当前环境已关闭开放注册，请联系管理员创建账号', 403)
-  }
-
-  const rl = await rateLimit(env.SESSIONS, 'register', clientIp(request), {
-    limit: 10,
-    windowSec: 60,
-  })
-  if (!rl.ok) return error('请求过于频繁，请稍后再试', 429)
+  const { session, response } = await requireAdmin(env, request)
+  if (response) return response
 
   const body = await readJson(request)
   if (!body) return error('请求体必须是 JSON')
 
   const username = String(body.username || '').trim()
   const password = String(body.password || '')
+  const isAdmin = !!body.isAdmin
 
   if (username.length < 2 || username.length > 32) {
     return error('用户名长度需在 2～32 之间')
@@ -55,8 +41,8 @@ export async function onRequestPost(context) {
 
   await run(
     env.DB,
-    'INSERT INTO users (id, username, password_hash, is_admin, created_at) VALUES (?, ?, ?, 0, ?)',
-    [id, username, password_hash, now],
+    'INSERT INTO users (id, username, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, ?)',
+    [id, username, password_hash, isAdmin ? 1 : 0, now],
   )
 
   const bankId = makeId('bank')
@@ -64,7 +50,7 @@ export async function onRequestPost(context) {
     env.DB,
     `INSERT INTO banks (id, owner_user_id, name, description, is_public, tags, created_at, updated_at)
      VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
-    [bankId, id, '我的题库', '注册后自动创建的私有题库', '[]', now, now],
+    [bankId, id, '我的题库', '管理员创建账号的默认私有题库', '[]', now, now],
   )
 
   try {
@@ -74,19 +60,21 @@ export async function onRequestPost(context) {
       [id, JSON.stringify(DEFAULT_SETTINGS), now],
     )
   } catch {
-    /* settings 表可能尚未迁移 */
+    /* ignore */
   }
 
-  const token = await createSession(env, { id, username, is_admin: 0 })
-  const secure = new URL(request.url).protocol === 'https:'
-  const res = json({
-    ok: true,
-    user: { id, username, isAdmin: false },
-    defaultBankId: bankId,
+  await writeAudit(env.DB, request, {
+    userId: session.userId,
+    action: 'admin.create_user',
+    target: id,
   })
-  res.headers.append(
-    'Set-Cookie',
-    buildSessionCookie(token, sessionTtlSeconds(env), secure),
+
+  return json(
+    {
+      ok: true,
+      user: { id, username, isAdmin },
+      defaultBankId: bankId,
+    },
+    201,
   )
-  return res
 }

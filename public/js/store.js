@@ -1,5 +1,5 @@
 import { api } from './api.js'
-import { mergeSettings, applySettings } from './lib/settings.js'
+import { mergeSettings, applySettings, SETTINGS_CACHE_KEY } from './lib/settings.js'
 
 export const store = {
   user: null,
@@ -77,6 +77,11 @@ export const store = {
     this.notes = []
     this.wrongs = []
     this.tags = []
+    try {
+      localStorage.removeItem(SETTINGS_CACHE_KEY)
+    } catch {
+      /* ignore */
+    }
   },
 
   isFavorite(questionId) {

@@ -7,6 +7,7 @@
 import { requireUser } from '../lib/auth.js'
 import { all, one, run } from '../lib/db.js'
 import { json, error, readJson } from '../lib/respond.js'
+import { assertReadableQuestion } from '../lib/learningAccess.js'
 
 function mapWrong(row) {
   return {
@@ -58,6 +59,10 @@ export async function onRequestPost(context) {
   if (!questionId) return error('缺少 questionId')
   if (!bankId) return error('缺少 bankId')
 
+  const access = await assertReadableQuestion(env.DB, session, questionId, bankId)
+  if (!access.ok) return access.response
+  const resolvedBankId = access.question.bank_id
+
   const now = Date.now()
   const existing = await one(
     env.DB,
@@ -72,13 +77,13 @@ export async function onRequestPost(context) {
       `UPDATE wrong_records SET
          bank_id = ?, wrong_count = ?, last_wrong_at = ?, removed = 0
        WHERE owner_user_id = ? AND question_id = ?`,
-      [bankId, wrongCount, now, session.userId, questionId],
+      [resolvedBankId, wrongCount, now, session.userId, questionId],
     )
     return json({
       ok: true,
       wrong: mapWrong({
         question_id: questionId,
-        bank_id: bankId,
+        bank_id: resolvedBankId,
         wrong_count: wrongCount,
         last_wrong_at: now,
         removed: 0,
@@ -90,14 +95,14 @@ export async function onRequestPost(context) {
     env.DB,
     `INSERT INTO wrong_records (owner_user_id, question_id, bank_id, wrong_count, last_wrong_at, removed)
      VALUES (?, ?, ?, 1, ?, 0)`,
-    [session.userId, questionId, bankId, now],
+    [session.userId, questionId, resolvedBankId, now],
   )
   return json(
     {
       ok: true,
       wrong: mapWrong({
         question_id: questionId,
-        bank_id: bankId,
+        bank_id: resolvedBankId,
         wrong_count: 1,
         last_wrong_at: now,
         removed: 0,

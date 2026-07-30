@@ -7,6 +7,7 @@ import { all, run } from '../lib/db.js'
 import { makeId } from '../lib/ids.js'
 import { mapBank } from '../lib/banks.js'
 import { json, error, readJson } from '../lib/respond.js'
+import { writeAudit } from '../lib/audit.js'
 
 export async function onRequestGet(context) {
   const { request, env } = context
@@ -77,6 +78,13 @@ export async function onRequestPost(context) {
     tags: JSON.stringify(tags),
     created_at: now,
     updated_at: now,
+  }
+  if (isPublic) {
+    await writeAudit(env.DB, request, {
+      userId: session.userId,
+      action: 'banks.create_public',
+      target: id,
+    })
   }
   return json({ ok: true, bank: mapBank(row) }, 201)
 }

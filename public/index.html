@@ -4,6 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>如故云题库</title>
+  <script>
+    try {
+      var c = localStorage.getItem('rugu-settings-cache')
+      if (c) {
+        var s = JSON.parse(c)
+        if (s.theme === 'light' || s.theme === 'dark') document.documentElement.setAttribute('data-theme', s.theme)
+        if (s.fontSize) document.documentElement.style.fontSize = Number(s.fontSize) + 'px'
+      }
+    } catch (e) {}
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet" />
@@ -14,46 +24,55 @@
   <link rel="stylesheet" href="/css/pages.css" />
 </head>
 <body>
-  <div id="boot" class="boot">
-    <p class="muted">正在连接云端题库…</p>
-  </div>
-
-  <div id="app" class="shell" hidden>
-    <aside class="side" aria-label="侧栏">
-      <div class="side__brand">
-        <p class="side__name">如故题库</p>
-        <p class="side__tag">云端同步 · Cloudflare</p>
-      </div>
-      <nav class="side__nav" id="sideNav" aria-label="主导航"></nav>
-      <p class="side__user" id="sideUser"></p>
-      <p class="side__foot">如故云题库</p>
-    </aside>
-
-    <div class="shell__main">
-      <header class="header">
-        <div class="header__brand">
-          <span class="header__mark" aria-hidden="true">如故</span>
-          <div class="header__titles">
-            <p class="header__product">如故题库</p>
-            <h1 class="header__page" id="headerTitle">首页</h1>
-          </div>
-        </div>
-        <div class="header__actions">
-          <div class="more">
-            <button type="button" class="header__more" id="btnMore" aria-haspopup="menu">更多</button>
-            <div class="more__panel" id="morePanel" role="menu"></div>
-          </div>
-          <button type="button" class="header__theme" id="btnTheme">主题</button>
-          <button type="button" class="header__logout" id="btnLogout">退出</button>
-        </div>
-      </header>
-      <main class="shell__content" id="view"></main>
+  <div id="app" class="app-root" data-mode="boot">
+    <div id="bootSlot" class="boot" role="status">
+      <p class="muted">正在连接云端题库…</p>
     </div>
 
-    <nav class="tabs" id="tabNav" aria-label="底部导航"></nav>
-  </div>
+    <div id="authSlot" class="auth-slot" hidden></div>
 
-  <div id="authRoot" hidden></div>
+    <div id="shell" class="shell" hidden>
+      <aside class="side" aria-label="侧栏">
+        <div class="side__brand">
+          <p class="side__name">如故题库</p>
+          <p class="side__tag">云端同步 · Cloudflare</p>
+        </div>
+        <nav class="side__nav" id="sideNav" aria-label="主导航"></nav>
+        <p class="side__user" id="sideUser"></p>
+        <p class="side__foot">如故云题库</p>
+      </aside>
+
+      <div class="shell__main">
+        <header class="header">
+          <div class="header__brand">
+            <span class="header__mark" aria-hidden="true">如故</span>
+            <div class="header__titles">
+              <p class="header__product">如故题库</p>
+              <h1 class="header__page" id="headerTitle">首页</h1>
+            </div>
+          </div>
+          <div class="header__actions">
+            <div class="more">
+              <button
+                type="button"
+                class="header__more"
+                id="btnMore"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                aria-controls="morePanel"
+              >更多</button>
+              <div class="more__panel" id="morePanel" role="menu" hidden></div>
+            </div>
+            <button type="button" class="header__theme" id="btnTheme">主题</button>
+            <button type="button" class="header__logout" id="btnLogout">退出</button>
+          </div>
+        </header>
+        <main class="shell__content" id="view"></main>
+      </div>
+
+      <nav class="tabs" id="tabNav" aria-label="底部导航"></nav>
+    </div>
+  </div>
 
   <script type="module" src="/js/app.js"></script>
 </body>

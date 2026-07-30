@@ -14,6 +14,7 @@
     "smoke": "node scripts/smoke-api.mjs",
     "smoke:isolation": "node scripts/smoke-isolation.mjs",
     "seed": "node scripts/seed-test-accounts.mjs",
+    "purge:test-users": "node scripts/purge-test-users.mjs",
     "db:extend": "wrangler d1 execute rugu-cloud-db --remote --file=./schema-extend.sql",
     "db:migrate-cols": "wrangler d1 execute rugu-cloud-db --remote --file=./schema-migrate.sql",
     "deploy:prod": "node scripts/deploy-prod.mjs"

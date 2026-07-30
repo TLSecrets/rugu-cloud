@@ -4,6 +4,7 @@
  */
 
 import { makeSessionToken } from './ids.js'
+import { one } from './db.js'
 import { error } from './respond.js'
 
 export const COOKIE_NAME = 'rugu_sess'
@@ -45,7 +46,7 @@ export function clearSessionCookie(secure = true) {
 }
 
 /**
- * 创建会话并写入 KV
+ * 创建会话并写入 KV（每次登录新 token，防会话固定）
  * @returns {Promise<string>} token
  */
 export async function createSession(env, user) {
@@ -70,8 +71,8 @@ export async function destroySession(env, token) {
 }
 
 /**
- * 读取当前登录用户；无效则返回 null
- * @returns {Promise<null | { userId: string, username: string, isAdmin: boolean }>}
+ * 读取当前登录用户；每次从 D1 刷新 is_admin
+ * @returns {Promise<null | { userId: string, username: string, isAdmin: boolean, token: string }>}
  */
 export async function readSession(env, request) {
   const token = getCookie(request, COOKIE_NAME)
@@ -84,10 +85,21 @@ export async function readSession(env, request) {
       await destroySession(env, token)
       return null
     }
+
+    const user = await one(
+      env.DB,
+      'SELECT id, username, is_admin FROM users WHERE id = ?',
+      [data.userId],
+    )
+    if (!user) {
+      await destroySession(env, token)
+      return null
+    }
+
     return {
-      userId: data.userId,
-      username: data.username,
-      isAdmin: !!data.isAdmin,
+      userId: user.id,
+      username: user.username,
+      isAdmin: Number(user.is_admin) === 1,
       token,
     }
   } catch {
@@ -100,6 +112,16 @@ export async function requireUser(env, request) {
   const session = await readSession(env, request)
   if (!session) {
     return { session: null, response: error('未登录或会话已过期', 401) }
+  }
+  return { session, response: null }
+}
+
+/** 必须管理员 */
+export async function requireAdmin(env, request) {
+  const { session, response } = await requireUser(env, request)
+  if (response) return { session: null, response }
+  if (!session.isAdmin) {
+    return { session: null, response: error('需要管理员权限', 403) }
   }
   return { session, response: null }
 }

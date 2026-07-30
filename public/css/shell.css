@@ -127,7 +127,18 @@
   box-shadow: var(--shadow-md);
   display: none; gap: 2px; z-index: 30;
 }
-.more__panel.is-open { display: grid; }
+.more__panel.is-open,
+.more__panel:not([hidden]).is-open { display: grid; }
+
+.app-root[data-mode='boot'] #bootSlot { display: grid; }
+.app-root[data-mode='login'] #authSlot { display: block; }
+.body--auth-lock { overflow: hidden; }
+.auth-slot {
+  min-height: 100dvh;
+  overflow: auto;
+  background: var(--color-bg);
+  background-image: var(--shell-glow);
+}
 .more__link {
   min-height: var(--touch-min);
   display: flex; align-items: center;

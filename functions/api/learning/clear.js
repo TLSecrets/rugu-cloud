@@ -4,7 +4,8 @@
  */
 import { requireUser } from '../../lib/auth.js'
 import { all, run } from '../../lib/db.js'
-import { json, error, readJson } from '../../lib/respond.js'
+import { json, readJson } from '../../lib/respond.js'
+import { writeAudit } from '../../lib/audit.js'
 
 export async function onRequestPost(context) {
   const { request, env } = context
@@ -30,6 +31,12 @@ export async function onRequestPost(context) {
       banksCleared++
     }
   }
+
+  await writeAudit(env.DB, request, {
+    userId: session.userId,
+    action: 'learning.clear',
+    target: banksCleared ? `banks:${banksCleared}` : 'learning',
+  })
 
   return json({ ok: true, banksCleared })
 }

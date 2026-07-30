@@ -1,5 +1,7 @@
 /** 客户端设置（对齐后端 DEFAULT_SETTINGS） */
 
+export const SETTINGS_CACHE_KEY = 'rugu-settings-cache'
+
 export const DEFAULT_SETTINGS = {
   theme: 'dark',
   shuffleOptions: true,
@@ -47,7 +49,30 @@ export function applyFontSize(settings) {
   document.documentElement.style.fontSize = `${clamped}px`
 }
 
+export function cacheSettings(settings) {
+  try {
+    const s = mergeSettings(settings)
+    localStorage.setItem(
+      SETTINGS_CACHE_KEY,
+      JSON.stringify({ theme: s.theme, fontSize: s.fontSize }),
+    )
+  } catch {
+    /* ignore quota */
+  }
+}
+
+export function applyCachedSettings() {
+  try {
+    const raw = localStorage.getItem(SETTINGS_CACHE_KEY)
+    if (!raw) return
+    applySettings(mergeSettings(JSON.parse(raw)))
+  } catch {
+    /* ignore */
+  }
+}
+
 export function applySettings(settings) {
   applyTheme(settings)
   applyFontSize(settings)
+  cacheSettings(settings)
 }

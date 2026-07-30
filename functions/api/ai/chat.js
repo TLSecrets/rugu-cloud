@@ -60,5 +60,5 @@ export async function onRequestPost(context) {
     return error(parsed?.error?.message || `DeepSeek HTTP ${upstream.status}`, 502)
   }
   const content = parsed?.choices?.[0]?.message?.content || ''
-  return json({ ok: true, content, raw: parsed })
+  return json({ ok: true, content })
 }

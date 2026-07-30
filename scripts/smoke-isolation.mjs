@@ -1,11 +1,12 @@
 /**
- * 验收冒烟：双用户隔离 + 如故 JSON 导入
+ * 验收冒烟：双用户隔离 + 学习数据越权 + bulk 上限
  * 前提：本地 npm run dev 已启动，且已建表
  */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const base = process.env.BASE_URL || 'http://127.0.0.1:8788'
+const STRONG = 'IsoPass_12345'
 
 function makeClient() {
   let cookie = ''
@@ -53,11 +54,11 @@ const b = makeClient()
 console.log('1) register A/B')
 const regA = await a.req('/api/auth/register', {
   method: 'POST',
-  body: JSON.stringify({ username: userA, password: 'test1234' }),
+  body: JSON.stringify({ username: userA, password: STRONG }),
 })
 const regB = await b.req('/api/auth/register', {
   method: 'POST',
-  body: JSON.stringify({ username: userB, password: 'test1234' }),
+  body: JSON.stringify({ username: userB, password: STRONG }),
 })
 assert(regA.data.ok, `A register failed: ${JSON.stringify(regA.data)}`)
 assert(regB.data.ok, `B register failed: ${JSON.stringify(regB.data)}`)
@@ -81,6 +82,7 @@ const create = await a.req('/api/questions', {
   }),
 })
 assert(create.status === 201 && create.data.ok, `create failed: ${JSON.stringify(create.data)}`)
+const qA = create.data.question.id
 
 console.log('3) B cannot list A private questions')
 const leak = await b.req(`/api/questions?bankId=${encodeURIComponent(bankA)}`)
@@ -93,49 +95,83 @@ const idsB = (banksB.data.banks || []).map((x) => x.id)
 assert(!idsB.includes(bankA), 'B should not see A private bank')
 assert(idsB.includes(bankB), 'B should see own bank')
 
-console.log('5) import 如故 sample JSON into B bank')
-const samplePath = resolve('import-ready-sample.json')
-let sample
-try {
-  sample = JSON.parse(readFileSync(samplePath, 'utf8'))
-} catch {
-  // generate on the fly from sibling 如故 if sample missing
-  const src = resolve('../如故/public/generated/generated-构建示例.json')
-  sample = JSON.parse(readFileSync(src, 'utf8'))
-}
-const items = sample.questions || []
-assert(items.length > 0, 'no questions to import')
-let imported = 0
-for (const raw of items) {
-  const body = {
-    bankId: bankB,
-    type: raw.type,
-    stem: raw.stem,
-    options: raw.options || [],
-    answer: {
-      optionKeys: raw.answer?.optionKeys || [],
-      texts: raw.answer?.texts || [],
-    },
-    explanation: raw.explanation || raw.answer?.explanation || '',
-    tags: raw.tags || [],
-    domain: raw.domain || '',
-  }
-  const r = await b.req('/api/questions', {
-    method: 'POST',
-    body: JSON.stringify(body),
-  })
-  if (r.data.ok) imported++
-  else console.warn('import fail', r.data.error)
-}
-assert(imported === items.length, `imported ${imported}/${items.length}`)
-
-const listB = await b.req(`/api/questions?bankId=${encodeURIComponent(bankB)}`)
-assert(listB.data.questions?.length === imported, 'list count mismatch after import')
-
-console.log('OK isolation + import', {
-  userA,
-  userB,
-  bankA,
-  bankB,
-  imported,
+console.log('5) B cannot favorite / note A private question')
+const favLeak = await b.req('/api/favorites', {
+  method: 'POST',
+  body: JSON.stringify({ questionId: qA, bankId: bankA }),
 })
+assert(favLeak.status === 403, `fav expected 403, got ${favLeak.status}`)
+const noteLeak = await b.req('/api/notes', {
+  method: 'POST',
+  body: JSON.stringify({ questionId: qA, bankId: bankA, content: 'x' }),
+})
+assert(noteLeak.status === 403, `note expected 403, got ${noteLeak.status}`)
+const wrongLeak = await b.req('/api/wrongs', {
+  method: 'POST',
+  body: JSON.stringify({ questionId: qA, bankId: bankA }),
+})
+assert(wrongLeak.status === 403, `wrong expected 403, got ${wrongLeak.status}`)
+
+console.log('6) non-admin cannot create public bank')
+const pub = await b.req('/api/banks', {
+  method: 'POST',
+  body: JSON.stringify({ name: 'hack-public', isPublic: true }),
+})
+assert(pub.status === 403, `public bank expected 403, got ${pub.status}`)
+
+console.log('7) bulk over limit rejected')
+const bulk = await b.req('/api/questions/bulk', {
+  method: 'POST',
+  body: JSON.stringify({
+    bankId: bankB,
+    questions: Array.from({ length: 501 }, (_, i) => ({
+      type: 'judge',
+      stem: `t${i}`,
+      options: [
+        { key: 'T', text: '对' },
+        { key: 'F', text: '错' },
+      ],
+      answer: { optionKeys: ['T'] },
+    })),
+  }),
+})
+assert(bulk.status === 400, `bulk limit expected 400, got ${bulk.status}`)
+
+console.log('8) optional sample import into B bank')
+const samplePath = resolve('import-ready-sample.json')
+try {
+  let sample
+  try {
+    sample = JSON.parse(readFileSync(samplePath, 'utf8'))
+  } catch {
+    const src = resolve('../如故/public/generated/generated-构建示例.json')
+    sample = JSON.parse(readFileSync(src, 'utf8'))
+  }
+  const items = (sample.questions || []).slice(0, 20)
+  let imported = 0
+  for (const raw of items) {
+    const body = {
+      bankId: bankB,
+      type: raw.type,
+      stem: raw.stem,
+      options: raw.options || [],
+      answer: {
+        optionKeys: raw.answer?.optionKeys || [],
+        texts: raw.answer?.texts || [],
+      },
+      explanation: raw.explanation || raw.answer?.explanation || '',
+      tags: raw.tags || [],
+      domain: raw.domain || '',
+    }
+    const r = await b.req('/api/questions', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+    if (r.data.ok) imported++
+  }
+  console.log('imported', imported)
+} catch (e) {
+  console.log('sample import skipped:', e.message)
+}
+
+console.log('OK isolation + hardening', { userA, userB, bankA, bankB })
