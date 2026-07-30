@@ -18,72 +18,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/tokens.css" />
-  <link rel="stylesheet" href="/css/base.css" />
-  <link rel="stylesheet" href="/css/shell.css" />
-  <link rel="stylesheet" href="/css/ui.css" />
-  <link rel="stylesheet" href="/css/pages.css" />
+  <link rel="stylesheet" href="/css/app.css" />
 </head>
 <body>
-  <!-- 唯一根容器：data-mode = boot | login | app -->
-  <div id="app-root" data-mode="boot">
-    <!-- 加载插槽 -->
-    <div id="bootSlot" class="slot slot--boot" role="status" aria-live="polite">
-      <p class="muted">正在连接云端题库…</p>
-    </div>
-
-    <!-- 登录模态插槽（遮罩 + 面板，同树内切换） -->
-    <div id="authSlot" class="slot slot--auth" hidden>
-      <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
-        <div class="auth-modal__backdrop" aria-hidden="true"></div>
-        <div class="auth-modal__panel" id="authPanel"></div>
-      </div>
-    </div>
-
-    <!-- 主页面插槽 -->
-    <div id="shellSlot" class="slot slot--shell shell" hidden>
-      <aside class="side" aria-label="侧栏">
-        <div class="side__brand">
-          <p class="side__name">如故题库</p>
-          <p class="side__tag">云端同步 · Cloudflare</p>
-        </div>
-        <nav class="side__nav" id="sideNav" aria-label="主导航"></nav>
-        <p class="side__user" id="sideUser"></p>
-        <p class="side__foot">如故云题库</p>
-      </aside>
-
-      <div class="shell__main">
-        <header class="header">
-          <div class="header__brand">
-            <span class="header__mark" aria-hidden="true">如故</span>
-            <div class="header__titles">
-              <p class="header__product">如故题库</p>
-              <h1 class="header__page" id="headerTitle">首页</h1>
-            </div>
-          </div>
-          <div class="header__actions">
-            <div class="more">
-              <button
-                type="button"
-                class="header__more"
-                id="btnMore"
-                aria-haspopup="menu"
-                aria-expanded="false"
-                aria-controls="morePanel"
-              >更多</button>
-              <div class="more__panel" id="morePanel" role="menu" hidden></div>
-            </div>
-            <button type="button" class="header__theme" id="btnTheme">主题</button>
-            <button type="button" class="header__logout" id="btnLogout">退出</button>
-          </div>
-        </header>
-        <main class="shell__content" id="view"></main>
-      </div>
-
-      <nav class="tabs" id="tabNav" aria-label="底部导航"></nav>
-    </div>
-  </div>
-
+  <div id="app"></div>
   <script type="module" src="/js/app.js"></script>
 </body>
 </html>
