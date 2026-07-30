@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>如故云题库</title>
   <script>
+    /* 首屏主题快照：防闪烁，随后由 /api/settings 覆盖合并 */
     try {
       var c = localStorage.getItem('rugu-settings-cache')
       if (c) {
@@ -24,14 +25,23 @@
   <link rel="stylesheet" href="/css/pages.css" />
 </head>
 <body>
-  <div id="app" class="app-root" data-mode="boot">
-    <div id="bootSlot" class="boot" role="status">
+  <!-- 唯一根容器：data-mode = boot | login | app -->
+  <div id="app-root" data-mode="boot">
+    <!-- 加载插槽 -->
+    <div id="bootSlot" class="slot slot--boot" role="status" aria-live="polite">
       <p class="muted">正在连接云端题库…</p>
     </div>
 
-    <div id="authSlot" class="auth-slot" hidden></div>
+    <!-- 登录模态插槽（遮罩 + 面板，同树内切换） -->
+    <div id="authSlot" class="slot slot--auth" hidden>
+      <div class="auth-modal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+        <div class="auth-modal__backdrop" aria-hidden="true"></div>
+        <div class="auth-modal__panel" id="authPanel"></div>
+      </div>
+    </div>
 
-    <div id="shell" class="shell" hidden>
+    <!-- 主页面插槽 -->
+    <div id="shellSlot" class="slot slot--shell shell" hidden>
       <aside class="side" aria-label="侧栏">
         <div class="side__brand">
           <p class="side__name">如故题库</p>

@@ -10,7 +10,7 @@ import { VIEWS } from './views/index.js'
 
 const viewEl = () => document.getElementById('view')
 const bootSlot = () => document.getElementById('bootSlot')
-const authSlot = () => document.getElementById('authSlot')
+const authPanel = () => document.getElementById('authPanel')
 
 let shellBound = false
 let rendering = false
@@ -63,14 +63,14 @@ async function renderRoute(route) {
       return
     }
 
+    // UX 门禁：requiresAdmin 仅隐藏入口/跳转；真实权限由 Worker requireAdmin 兜底
     const meta = routeMeta(route.path)
     if (meta.requiresAdmin && !store.user.isAdmin) {
       navigate('/')
-      const el = viewEl()
-      if (el) {
-        el.innerHTML = '<div class="flash flash--err">需要管理员权限</div>'
-      }
+      setMode('app')
       renderShell(store, parseHash())
+      const el = viewEl()
+      if (el) el.innerHTML = '<div class="flash flash--err">需要管理员权限</div>'
       return
     }
 
@@ -93,9 +93,9 @@ async function renderRoute(route) {
 
 function showLoginOnly() {
   setMode('login')
-  const root = authSlot()
-  if (!root) return
-  renderLogin(root, {
+  const panel = authPanel()
+  if (!panel) return
+  renderLogin(panel, {
     api,
     navigate,
     onAuthed: () => {

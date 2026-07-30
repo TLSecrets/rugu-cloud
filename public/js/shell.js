@@ -6,55 +6,68 @@ function hashLink(path) {
   return `#${path}`
 }
 
-/** @param {'boot'|'login'|'app'} mode */
+function rootEl() {
+  return document.getElementById('app-root')
+}
+
+/**
+ * 单根状态机：仅改 #app-root[data-mode]，三插槽同树显隐
+ * @param {'boot'|'login'|'app'} mode
+ */
 export function setMode(mode) {
-  const root = document.getElementById('app')
+  const root = rootEl()
   if (!root) return
   root.dataset.mode = mode
 
   const boot = document.getElementById('bootSlot')
   const auth = document.getElementById('authSlot')
-  const shell = document.getElementById('shell')
+  const shell = document.getElementById('shellSlot')
 
   if (boot) boot.hidden = mode !== 'boot'
   if (auth) auth.hidden = mode !== 'login'
   if (shell) shell.hidden = mode !== 'app'
 
-  document.body.classList.toggle('body--auth-lock', mode === 'login')
-  document.body.style.overflow = mode === 'login' ? 'hidden' : ''
+  const lock = mode === 'login'
+  document.documentElement.classList.toggle('scroll-lock', lock)
+  document.body.classList.toggle('scroll-lock', lock)
 }
 
+/** 激活态只使用 .active */
 function setActive(navId) {
   for (const el of document.querySelectorAll('[data-nav]')) {
-    const on = el.dataset.nav === navId
-    el.classList.toggle('is-active', on)
-    if (el.classList.contains('side__link')) el.classList.toggle('side__link--active', on)
-    if (el.classList.contains('tabs__item')) el.classList.toggle('tabs__item--active', on)
-    if (el.classList.contains('more__link')) el.classList.toggle('more__link--active', on)
+    const on = el.dataset.nav === navId && el.dataset.nav !== 'more'
+    el.classList.toggle('active', on)
     if (on && el.tagName === 'A') el.setAttribute('aria-current', 'page')
     else el.removeAttribute('aria-current')
   }
 }
 
+function visibleMenuItems() {
+  return [...document.querySelectorAll('#morePanel [role="menuitem"]:not([hidden])')]
+}
+
+function setMoreExpanded(open) {
+  document.getElementById('btnMore')?.setAttribute('aria-expanded', open ? 'true' : 'false')
+  document.getElementById('tabMore')?.setAttribute('aria-expanded', open ? 'true' : 'false')
+}
+
 function closeMoreMenu() {
   const panel = document.getElementById('morePanel')
-  const btn = document.getElementById('btnMore')
   if (panel) {
     panel.classList.remove('is-open')
     panel.hidden = true
   }
-  if (btn) btn.setAttribute('aria-expanded', 'false')
+  setMoreExpanded(false)
 }
 
 function openMoreMenu() {
   const panel = document.getElementById('morePanel')
-  const btn = document.getElementById('btnMore')
   if (panel) {
     panel.hidden = false
     panel.classList.add('is-open')
   }
-  if (btn) btn.setAttribute('aria-expanded', 'true')
-  panel?.querySelector('.more__link')?.focus()
+  setMoreExpanded(true)
+  visibleMenuItems()[0]?.focus()
 }
 
 function toggleMoreMenu() {
@@ -63,8 +76,55 @@ function toggleMoreMenu() {
   else openMoreMenu()
 }
 
+function focusMenuByDelta(delta) {
+  const items = visibleMenuItems()
+  if (!items.length) return
+  const i = items.indexOf(document.activeElement)
+  const next = i < 0 ? 0 : (i + delta + items.length) % items.length
+  items[next].focus()
+}
+
+function filterNav(items, store) {
+  return items.filter((i) => !i.requiresAdmin || store.user?.isAdmin)
+}
+
+/** 每次根据 NAV_ITEMS + 权限重绘三处导航（无 data-rendered） */
+function paintNav(store) {
+  const sideNav = document.getElementById('sideNav')
+  if (sideNav) {
+    sideNav.innerHTML = filterNav(sideNavItems(), store)
+      .map(
+        (item) =>
+          `<a class="side__link" data-nav="${item.id}" href="${hashLink(item.path)}">${item.label}</a>`,
+      )
+      .join('')
+  }
+
+  const tabNav = document.getElementById('tabNav')
+  if (tabNav) {
+    tabNav.innerHTML = tabNavItems()
+      .map((item) => {
+        if (item.id === 'more') {
+          return `<button type="button" class="tabs__item" data-nav="more" id="tabMore" aria-haspopup="menu" aria-expanded="false" aria-controls="morePanel">${item.label}</button>`
+        }
+        return `<a class="tabs__item" data-nav="${item.id}" href="${hashLink(item.path)}">${item.label}</a>`
+      })
+      .join('')
+  }
+
+  const morePanel = document.getElementById('morePanel')
+  if (morePanel) {
+    morePanel.innerHTML = filterNav(moreNavItems(), store)
+      .map(
+        (item) =>
+          `<a class="more__link" role="menuitem" tabindex="-1" data-nav="${item.id}" href="${hashLink(item.path)}">${item.label}</a>`,
+      )
+      .join('')
+  }
+}
+
 export function renderShell(store, route) {
-  const shell = document.getElementById('shell')
+  const shell = document.getElementById('shellSlot')
   if (!shell) return
 
   const meta = routeMeta(route.path)
@@ -76,43 +136,7 @@ export function renderShell(store, route) {
     userEl.textContent = `${store.user.username}${store.user.isAdmin ? ' · 管理员' : ''}`
   }
 
-  const sideNav = document.getElementById('sideNav')
-  if (sideNav && !sideNav.dataset.rendered) {
-    const items = sideNavItems().filter((i) => !i.requiresAdmin || store.user?.isAdmin)
-    sideNav.innerHTML = items
-      .map(
-        (item) =>
-          `<a class="side__link" data-nav="${item.id}" href="${hashLink(item.path)}">${item.label}</a>`,
-      )
-      .join('')
-    sideNav.dataset.rendered = '1'
-  }
-
-  const tabNav = document.getElementById('tabNav')
-  if (tabNav && !tabNav.dataset.rendered) {
-    tabNav.innerHTML = tabNavItems()
-      .map((item) => {
-        if (item.id === 'more') {
-          return `<button type="button" class="tabs__item" data-nav="more" id="tabMore" aria-haspopup="menu" aria-controls="morePanel">${item.label}</button>`
-        }
-        return `<a class="tabs__item" data-nav="${item.id}" href="${hashLink(item.path)}">${item.label}</a>`
-      })
-      .join('')
-    tabNav.dataset.rendered = '1'
-  }
-
-  const morePanel = document.getElementById('morePanel')
-  if (morePanel && !morePanel.dataset.rendered) {
-    const items = moreNavItems().filter((i) => !i.requiresAdmin || store.user?.isAdmin)
-    morePanel.innerHTML = items
-      .map(
-        (item) =>
-          `<a class="more__link" role="menuitem" data-nav="${item.id}" href="${hashLink(item.path)}">${item.label}</a>`,
-      )
-      .join('')
-    morePanel.dataset.rendered = '1'
-  }
-
+  paintNav(store)
   setActive(meta.nav)
 
   const themeBtn = document.getElementById('btnTheme')
@@ -131,8 +155,7 @@ export function bindShellEvents(store, { navigate, onLogout, onThemeToggle }) {
   document.getElementById('btnLogout')?.addEventListener('click', () => onLogout())
   document.getElementById('btnTheme')?.addEventListener('click', () => onThemeToggle())
 
-  const moreBtn = document.getElementById('btnMore')
-  moreBtn?.addEventListener('click', (e) => {
+  document.getElementById('btnMore')?.addEventListener('click', (e) => {
     e.stopPropagation()
     toggleMoreMenu()
   })
@@ -153,23 +176,49 @@ export function bindShellEvents(store, { navigate, onLogout, onThemeToggle }) {
   })
 
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeMoreMenu()
+    const panel = document.getElementById('morePanel')
+    const open = panel?.classList.contains('is-open')
+    if (e.key === 'Escape') {
+      if (open) {
+        e.preventDefault()
+        closeMoreMenu()
+        document.getElementById('btnMore')?.focus()
+      }
+      return
+    }
+    if (!open) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      focusMenuByDelta(1)
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      focusMenuByDelta(-1)
+    } else if (e.key === 'Home') {
+      e.preventDefault()
+      visibleMenuItems()[0]?.focus()
+    } else if (e.key === 'End') {
+      e.preventDefault()
+      const items = visibleMenuItems()
+      items[items.length - 1]?.focus()
+    }
   })
 
   document.getElementById('morePanel')?.addEventListener('click', (e) => {
     if (e.target.closest('.more__link')) closeMoreMenu()
   })
 
+  // 平板适配类由视口宽度动态追加（非写死在 HTML）
   matchMedia(TABLET_MQ).addEventListener('change', updateTabletClass)
+  updateTabletClass()
 }
 
 function updateTabletClass() {
-  const shell = document.getElementById('shell')
+  const shell = document.getElementById('shellSlot')
   if (!shell) return
   shell.classList.toggle('shell--tablet', matchMedia(TABLET_MQ).matches)
 }
 
-/** @deprecated use setMode */
+/** @deprecated */
 export function showApp(show) {
   setMode(show ? 'app' : 'boot')
 }
