@@ -58,7 +58,7 @@ npx wrangler d1 execute rugu-cloud-db --local --file=./schema.sql
 
 ---
 
-本地开发：
+## 三、本地开发
 
 ```bash
 npm run db:local   # 首次 / 换机后执行建表
@@ -68,13 +68,29 @@ npm run dev        # 读取 wrangler.toml 中的 D1/KV 绑定，默认 http://12
 > `npm run db:local` 与 `npm run dev` 必须共用同一套 `wrangler.toml` 里的 `database_id`，否则会出现「no such table: users」。若仍提示缺表，可再执行 `node scripts/apply-local-schema.mjs` 把 `schema.sql` 写入本机 `.wrangler/state` 下全部 D1 文件。
 
 登录与注册会根据请求 URL 是否为 `https` 决定 Cookie 是否加 `Secure`。
+
+本地验收脚本（需先 `npm run dev`）：
+
+```bash
+npm run smoke
+npm run smoke:isolation
+```
+
 ---
 
 ## 四、部署到 Cloudflare Pages
 
+仓库已在 GitHub：https://github.com/TLSecrets/rugu-cloud
+
+> 当前本机 `wrangler` 未登录。部署前请在本机终端执行 `npx wrangler login`，再创建 D1/KV 并填写 `wrangler.toml`。
+
 ### 方式 A：Wrangler 直接部署
 
 ```bash
+npx wrangler d1 create rugu-cloud-db
+npx wrangler kv namespace create SESSIONS
+# 把输出的 ID 写入 wrangler.toml
+npm run db:remote
 npm run deploy
 ```
 
@@ -85,17 +101,19 @@ npm run deploy
 
 若 CLI 部署未自动挂上绑定，请在控制台手动添加，名称必须与 `wrangler.toml` 中 `binding` 一致。
 
-### 方式 B：Git 连接 Pages
+### 方式 B：Git 连接 Pages（推荐）
 
-1. 把本仓库推到 GitHub。
-2. Cloudflare Pages → Create → Connect to Git。
+1. Cloudflare Dashboard → **Workers & Pages** → **Create** → **Pages** → Connect to Git。
+2. 选择 `TLSecrets/rugu-cloud`。
 3. Build 配置：
-   - **Build command**：留空（或 `echo skip`）
+   - **Framework preset**：None
+   - **Build command**：留空
    - **Build output directory**：`public`
-   - **Root directory**：仓库根目录
-4. 在项目 Settings → Functions 绑定 D1 / KV（同上）。
-5. 对生产 D1 执行一次 `schema.sql`（`--remote`）。
-
+4. 部署完成后，在项目 **Settings → Bindings** 添加：
+   - D1 `DB` → `rugu-cloud-db`
+   - KV `SESSIONS` → 会话命名空间
+5. 对生产库执行建表：`npm run db:remote`
+6. 重新部署一次（或在控制台 Retry deployment），使绑定生效。
 ---
 
 ## 五、设置管理员

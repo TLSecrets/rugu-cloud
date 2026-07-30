@@ -11,7 +11,8 @@
     "db:local:fix": "node scripts/apply-local-schema.mjs",
     "db:remote": "wrangler d1 execute rugu-cloud-db --remote --file=./schema.sql",
     "migrate:rugu": "node scripts/migrate-from-rugu.mjs",
-    "smoke": "node scripts/smoke-api.mjs"
+    "smoke": "node scripts/smoke-api.mjs",
+    "smoke:isolation": "node scripts/smoke-isolation.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3"
