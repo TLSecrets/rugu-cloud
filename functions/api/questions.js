@@ -2,16 +2,16 @@
  * GET  /api/questions?bankId=xxx —— 列出某库全部题目
  * POST /api/questions —— 新增题目
  */
-import { requireUser } from '../../lib/auth.js'
-import { all, run } from '../../lib/db.js'
-import { makeId } from '../../lib/ids.js'
+import { requireUser } from '../lib/auth.js'
+import { all, run } from '../lib/db.js'
+import { makeId } from '../lib/ids.js'
 import {
   getBank,
   canAccessBank,
   mapQuestion,
   normalizeQuestionInput,
-} from '../../lib/banks.js'
-import { json, error, readJson } from '../../lib/respond.js'
+} from '../lib/banks.js'
+import { json, error, readJson } from '../lib/respond.js'
 
 export async function onRequestGet(context) {
   const { request, env } = context

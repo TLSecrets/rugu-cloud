@@ -58,18 +58,16 @@ npx wrangler d1 execute rugu-cloud-db --local --file=./schema.sql
 
 ---
 
-## 三、本地开发
+本地开发：
 
 ```bash
-npm run dev
+npm run db:local   # 首次 / 换机后执行建表
+npm run dev        # 读取 wrangler.toml 中的 D1/KV 绑定，默认 http://127.0.0.1:8788
 ```
 
-浏览器打开终端提示的地址（一般为 `http://127.0.0.1:8788`）。
+> `npm run db:local` 与 `npm run dev` 必须共用同一套 `wrangler.toml` 里的 `database_id`，否则会出现「no such table: users」。若仍提示缺表，可再执行 `node scripts/apply-local-schema.mjs` 把 `schema.sql` 写入本机 `.wrangler/state` 下全部 D1 文件。
 
-首次本地使用前请执行上一节的 `--local` 建表。本地 Cookie 在 `http` 下不带 `Secure` 时，若登录失败，可临时在 `functions/lib/auth.js` 的 `createSession` 调用处确认 `buildSessionCookie(..., secure)`：`pages dev` 走 http 时登录/注册接口已按请求协议处理（见下方说明）。
-
-> 登录与注册会根据请求 URL 是否为 `https` 决定 Cookie 是否加 `Secure`。
-
+登录与注册会根据请求 URL 是否为 `https` 决定 Cookie 是否加 `Secure`。
 ---
 
 ## 四、部署到 Cloudflare Pages

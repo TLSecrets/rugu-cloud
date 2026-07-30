@@ -2,11 +2,11 @@
  * GET  /api/banks —— 我的私有题库 + 全部公共题库
  * POST /api/banks —— 新建私有题库
  */
-import { requireUser } from '../../lib/auth.js'
-import { all, run } from '../../lib/db.js'
-import { makeId } from '../../lib/ids.js'
-import { mapBank } from '../../lib/banks.js'
-import { json, error, readJson } from '../../lib/respond.js'
+import { requireUser } from '../lib/auth.js'
+import { all, run } from '../lib/db.js'
+import { makeId } from '../lib/ids.js'
+import { mapBank } from '../lib/banks.js'
+import { json, error, readJson } from '../lib/respond.js'
 
 export async function onRequestGet(context) {
   const { request, env } = context

@@ -5,11 +5,13 @@
   "description": "如故云题库 — Cloudflare Pages + D1 + KV",
   "type": "module",
   "scripts": {
-    "dev": "wrangler pages dev public --d1=DB --kv=SESSIONS",
-    "deploy": "wrangler pages deploy public",
+    "dev": "wrangler pages dev",
+    "deploy": "wrangler pages deploy",
     "db:local": "wrangler d1 execute rugu-cloud-db --local --file=./schema.sql",
+    "db:local:fix": "node scripts/apply-local-schema.mjs",
     "db:remote": "wrangler d1 execute rugu-cloud-db --remote --file=./schema.sql",
-    "migrate:rugu": "node scripts/migrate-from-rugu.mjs"
+    "migrate:rugu": "node scripts/migrate-from-rugu.mjs",
+    "smoke": "node scripts/smoke-api.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3"
