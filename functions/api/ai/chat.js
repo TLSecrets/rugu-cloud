@@ -3,10 +3,10 @@
  * 用用户 settings 中的 DeepSeek 配置代理对话（避免浏览器直连 CORS）
  * body: { messages: [{role,content}], temperature? }
  */
-import { requireUser } from '../lib/auth.js'
-import { one } from '../lib/db.js'
-import { mergeSettings } from '../lib/settings.js'
-import { json, error, readJson } from '../lib/respond.js'
+import { requireUser } from '../../lib/auth.js'
+import { one } from '../../lib/db.js'
+import { mergeSettings } from '../../lib/settings.js'
+import { json, error, readJson } from '../../lib/respond.js'
 
 export async function onRequestPost(context) {
   const { request, env } = context

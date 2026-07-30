@@ -36,23 +36,29 @@ npm run smoke
 
 ## 生产部署
 
-仓库：https://github.com/TLSecrets/rugu-cloud（Pages 已连 Git，推送 `main` 即部署）
+线上项目用 **Wrangler 直传**（`rugu-cloud.pages.dev`）。推送 GitHub 不会自动更新 Cloudflare Pages。
 
 ```bash
-# 全量建表（新库）
-npm run db:remote
+npx wrangler login          # 本机交互登录（token 过期时必做）
+npm run deploy:prod         # 远端 schema-extend + pages deploy + 种子账号
+```
 
-# 已有库：增量表 + 列
+或分步：
+
+```bash
 npm run db:extend
-npm run db:migrate-cols
-
-# 设管理员
-# UPDATE users SET is_admin = 1 WHERE username = 'admin';
-
+npm run db:migrate-cols     # 列已存在可忽略报错
+npx wrangler pages deploy public --project-name=rugu-cloud --commit-dirty=true
 BASE_URL=https://rugu-cloud.pages.dev npm run seed
 ```
 
-绑定（Settings → Bindings）：D1 `DB` → `rugu-cloud-db`，KV `SESSIONS`。
+D1 Console 设管理员：
+
+```sql
+UPDATE users SET is_admin = 1 WHERE username = 'admin';
+```
+
+绑定：D1 `DB` → `rugu-cloud-db`，KV `SESSIONS`。
 
 ---
 
