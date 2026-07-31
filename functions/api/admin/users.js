@@ -1,15 +1,29 @@
 /**
+ * GET  /api/admin/users —— 管理员列出用户
  * POST /api/admin/users —— 管理员创建用户
  * body: { username, password, isAdmin? }
  */
 import { requireAdmin } from '../../lib/auth.js'
 import { hashPassword } from '../../lib/password.js'
-import { validatePassword } from '../../lib/passwordPolicy.js'
 import { makeId } from '../../lib/ids.js'
 import { one, run } from '../../lib/db.js'
 import { DEFAULT_SETTINGS } from '../../lib/settings.js'
 import { json, error, readJson } from '../../lib/respond.js'
 import { writeAudit } from '../../lib/audit.js'
+import {
+  validateUsername,
+  validateNewPassword,
+  listUsers,
+} from '../../lib/adminUsers.js'
+
+export async function onRequestGet(context) {
+  const { request, env } = context
+  const { response } = await requireAdmin(env, request)
+  if (response) return response
+
+  const users = await listUsers(env.DB)
+  return json({ ok: true, users })
+}
 
 export async function onRequestPost(context) {
   const { request, env } = context
@@ -23,13 +37,9 @@ export async function onRequestPost(context) {
   const password = String(body.password || '')
   const isAdmin = !!body.isAdmin
 
-  if (username.length < 2 || username.length > 32) {
-    return error('用户名长度需在 2～32 之间')
-  }
-  if (!/^[a-zA-Z0-9_\u4e00-\u9fff]+$/.test(username)) {
-    return error('用户名仅允许字母、数字、下划线、中文')
-  }
-  const pwdErr = validatePassword(username, password)
+  const nameErr = validateUsername(username)
+  if (nameErr) return error(nameErr)
+  const pwdErr = validateNewPassword(username, password)
   if (pwdErr) return error(pwdErr)
 
   const exists = await one(env.DB, 'SELECT id FROM users WHERE username = ?', [username])

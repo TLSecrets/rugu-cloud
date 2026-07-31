@@ -18,7 +18,12 @@ export function renderWrong(el, ctx) {
       </section>`
 
     el.querySelectorAll('[data-practice]').forEach((btn) => {
-      btn.addEventListener('click', () => navigate('/practice', { bankId: btn.dataset.practice }))
+      btn.addEventListener('click', () =>
+        navigate('/practice', {
+          bankId: btn.dataset.practice,
+          questionId: btn.dataset.qid || undefined,
+        }),
+      )
     })
     el.querySelectorAll('[data-remove]').forEach((btn) => {
       btn.addEventListener('click', async () => {
@@ -37,16 +42,15 @@ export function renderWrong(el, ctx) {
 
   function wrongRow(w) {
     const bank = store.getBank(w.bankId)
-    const qs = store.questionsByBank[w.bankId] || []
-    const q = qs.find((x) => x.id === w.questionId)
-    const stem = q?.stem || `题目 ${w.questionId}`
+    const stem = w.stem || `题目 ${w.questionId}`
+    const typeLabel = w.type ? TYPE_LABELS[w.type] || w.type : ''
     return `<article class="list-row">
       <div class="list-row__main">
         <div class="list-row__title">${escapeHtml(stem.slice(0, 100))}${stem.length > 100 ? '…' : ''}</div>
-        <div class="list-row__meta">${escapeHtml(bank?.name || w.bankId)} · 错 ${w.wrongCount} 次 · ${q ? TYPE_LABELS[q.type] : ''}</div>
+        <div class="list-row__meta">${escapeHtml(bank?.name || w.bankId)} · 错 ${w.wrongCount} 次${typeLabel ? ` · ${typeLabel}` : ''}</div>
       </div>
       <div class="list-row__actions">
-        <button class="btn btn--primary" data-practice="${escapeHtml(w.bankId)}">练习</button>
+        <button class="btn btn--primary" data-practice="${escapeHtml(w.bankId)}" data-qid="${escapeHtml(w.questionId)}">练习</button>
         <button class="btn" data-remove="${escapeHtml(w.questionId)}">移除</button>
         <button class="btn btn--danger" data-delete="${escapeHtml(w.questionId)}">删除</button>
       </div>

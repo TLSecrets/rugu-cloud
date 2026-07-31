@@ -10,6 +10,8 @@ import { renderNotes } from './notes.js'
 import { renderImportExport } from './importExport.js'
 import { renderGuide } from './guide.js'
 import { renderSettings } from './settings.js'
+import { renderAdmin } from './admin.js'
+import { renderQuestions } from './questions.js'
 
 export function renderNotFound(el, { navigate }) {
   el.innerHTML = `
@@ -36,5 +38,7 @@ export const VIEWS = {
   '/import-export': renderImportExport,
   '/guide': renderGuide,
   '/settings': renderSettings,
+  '/admin': renderAdmin,
+  '/questions': renderQuestions,
   '/404': renderNotFound,
 }

@@ -17,6 +17,8 @@ function mapNote(row) {
     content: row.content,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    stem: row.stem ?? undefined,
+    type: row.type ?? undefined,
   }
 }
 
@@ -27,7 +29,11 @@ export async function onRequestGet(context) {
 
   const rows = await all(
     env.DB,
-    'SELECT * FROM notes WHERE owner_user_id = ? ORDER BY updated_at DESC',
+    `SELECT n.*, q.stem, q.type
+     FROM notes n
+     LEFT JOIN questions q ON q.id = n.question_id
+     WHERE n.owner_user_id = ?
+     ORDER BY n.updated_at DESC`,
     [session.userId],
   )
   return json({ ok: true, notes: rows.map(mapNote) })

@@ -1,8 +1,12 @@
 import { escapeHtml, showFlash } from '../lib/dom.js'
 import { FONT_SIZE_MIN, FONT_SIZE_MAX } from '../lib/settings.js'
+import { TYPE_LABELS } from '../lib/grade.js'
+
+const TYPE_KEYS = Object.keys(TYPE_LABELS)
 
 export function renderSettings(el, { store, api }) {
   const s = store.settings
+  const enabled = Array.isArray(s.enabledTypes) ? s.enabledTypes : []
 
   el.innerHTML = `
     <header class="page-header">
@@ -32,10 +36,20 @@ export function renderSettings(el, { store, api }) {
         <input type="number" id="autoNextDelay" min="0" max="30" value="${s.autoNextDelay}" /></label>
       <label class="field"><span>答案展示</span>
         <select id="showAnswerMode">
-          <option value="instant" ${s.showAnswerMode === 'instant' ? 'selected' : ''}>即时</option>
+          <option value="instant" ${s.showAnswerMode === 'instant' ? 'selected' : ''}>即时（单选/判断选完即判）</option>
           <option value="manual" ${s.showAnswerMode === 'manual' ? 'selected' : ''}>手动确认</option>
         </select>
       </label>
+      <fieldset class="field">
+        <legend class="field__label">练习题型（不勾选=全部）</legend>
+        <div class="tag-row" id="enabledTypes">
+          ${TYPE_KEYS.map(
+            (t) => `<label class="chip chip--click"><input type="checkbox" value="${t}" ${
+              enabled.includes(t) ? 'checked' : ''
+            }/> ${TYPE_LABELS[t]}</label>`,
+          ).join('')}
+        </div>
+      </fieldset>
       <label class="field"><span>题库标签筛选</span>
         <select id="tagMode">
           <option value="or" ${s.bankTagMatchMode === 'or' ? 'selected' : ''}>或（任意标签）</option>
@@ -63,6 +77,7 @@ export function renderSettings(el, { store, api }) {
 
   el.querySelector('#btnSave')?.addEventListener('click', async () => {
     try {
+      const enabledTypes = [...el.querySelectorAll('#enabledTypes input:checked')].map((x) => x.value)
       await store.patchSettings({
         theme: el.querySelector('#theme').value,
         fontSize: Number(el.querySelector('#fontSize').value),
@@ -71,6 +86,7 @@ export function renderSettings(el, { store, api }) {
         autoNextEnabled: el.querySelector('#autoNext').checked,
         autoNextDelay: Number(el.querySelector('#autoNextDelay').value) || 0,
         showAnswerMode: el.querySelector('#showAnswerMode').value,
+        enabledTypes,
         bankTagMatchMode: el.querySelector('#tagMode').value,
         deepseek: {
           apiKey: el.querySelector('#dsKey').value.trim(),

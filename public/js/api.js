@@ -95,4 +95,16 @@ export const api = {
 
   aiChat: (body) =>
     request('/api/ai/chat', { method: 'POST', body: JSON.stringify(body) }),
+
+  adminListUsers: () => request('/api/admin/users'),
+  adminGetUser: (id) => request(`/api/admin/users/${encodeURIComponent(id)}`),
+  adminCreateUser: (body) =>
+    request('/api/admin/users', { method: 'POST', body: JSON.stringify(body) }),
+  adminUpdateUser: (id, body) =>
+    request(`/api/admin/users/${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  adminDeleteUser: (id) =>
+    request(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' }),
 }

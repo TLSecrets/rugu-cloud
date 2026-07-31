@@ -16,6 +16,8 @@ function mapWrong(row) {
     wrongCount: Number(row.wrong_count) || 0,
     lastWrongAt: row.last_wrong_at,
     removed: Number(row.removed) === 1,
+    stem: row.stem ?? undefined,
+    type: row.type ?? undefined,
   }
 }
 
@@ -39,8 +41,16 @@ export async function onRequestGet(context) {
   const rows = await all(
     env.DB,
     includeRemoved
-      ? 'SELECT * FROM wrong_records WHERE owner_user_id = ? ORDER BY last_wrong_at DESC'
-      : 'SELECT * FROM wrong_records WHERE owner_user_id = ? AND removed = 0 ORDER BY last_wrong_at DESC',
+      ? `SELECT w.*, q.stem, q.type
+         FROM wrong_records w
+         LEFT JOIN questions q ON q.id = w.question_id
+         WHERE w.owner_user_id = ?
+         ORDER BY w.last_wrong_at DESC`
+      : `SELECT w.*, q.stem, q.type
+         FROM wrong_records w
+         LEFT JOIN questions q ON q.id = w.question_id
+         WHERE w.owner_user_id = ? AND w.removed = 0
+         ORDER BY w.last_wrong_at DESC`,
     [session.userId],
   )
   return json({ ok: true, wrongs: rows.map(mapWrong) })

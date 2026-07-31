@@ -916,10 +916,27 @@ img {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }
-.chip--on {
-  border-color: var(--color-accent);
-  background: var(--color-accent-soft);
-  color: var(--color-accent);
+.chip--click {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.chip--click input {
+  margin: 0;
+}
+.field legend.field__label,
+.field > .field__label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+.field fieldset,
+fieldset.field {
+  border: none;
+  padding: 0;
+  margin: 0 0 var(--space-3);
 }
 
 .login-card { width: min(26rem, 100%); }
@@ -1043,3 +1060,29 @@ img {
   .view--enter,
   .boot { animation: none !important; transition: none !important; }
 }
+
+.opt-edit {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-2);
+  align-items: center;
+  margin-bottom: var(--space-2);
+}
+.opt-edit .opt-content {
+  min-width: 0;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.note-box {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+}
+.note-box .btn { width: 100%; margin-top: var(--space-2); }
+.preview-box { margin-top: var(--space-3); }
+.preview-line { margin: var(--space-1) 0; font-size: var(--font-size-sm); color: var(--color-text-secondary); }
+

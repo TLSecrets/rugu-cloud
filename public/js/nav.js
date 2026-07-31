@@ -24,10 +24,12 @@ export const NAV_ITEMS = [
   { id: 'import-export', path: '/import-export', label: '导入导出', slots: ['side', 'more'] },
   { id: 'guide', path: '/guide', label: '指南', title: '使用指南', slots: ['side', 'more'] },
   { id: 'settings', path: '/settings', label: '设置', slots: ['side', 'more'] },
+  { id: 'admin', path: '/admin', label: '管理', title: '管理', slots: ['side', 'more'], requiresAdmin: true },
 ]
 
 const EXTRA_META = {
   '/exam-result': { title: '考试结果', nav: 'exam', requiresAdmin: false },
+  '/questions': { title: '题目管理', nav: 'banks', requiresAdmin: false },
   '/login': { title: '登录', nav: null, requiresAdmin: false },
 }
 

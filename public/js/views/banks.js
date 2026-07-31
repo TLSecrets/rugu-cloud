@@ -58,6 +58,9 @@ export function renderBanks(el, ctx) {
     el.querySelectorAll('[data-preview]').forEach((btn) => {
       btn.addEventListener('click', () => previewBank(btn.dataset.preview))
     })
+    el.querySelectorAll('[data-questions]').forEach((btn) => {
+      btn.addEventListener('click', () => navigate('/questions', { bankId: btn.dataset.questions }))
+    })
   }
 
   function bankRow(b) {
@@ -71,6 +74,7 @@ export function renderBanks(el, ctx) {
       </div>
       <div class="list-row__actions">
         <button class="btn btn--primary" data-practice="${escapeHtml(b.id)}">练习</button>
+        <button class="btn" data-questions="${escapeHtml(b.id)}">题目</button>
         <button class="btn" data-preview="${escapeHtml(b.id)}">预览</button>
         <button class="btn" data-edit="${escapeHtml(b.id)}">编辑</button>
         <button class="btn btn--danger" data-del="${escapeHtml(b.id)}">删除</button>

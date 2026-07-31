@@ -24,7 +24,12 @@ export function renderFavorites(el, ctx) {
       })
     })
     el.querySelectorAll('[data-practice]').forEach((btn) => {
-      btn.addEventListener('click', () => navigate('/practice', { bankId: btn.dataset.practice }))
+      btn.addEventListener('click', () =>
+        navigate('/practice', {
+          bankId: btn.dataset.practice,
+          questionId: btn.dataset.qid || undefined,
+        }),
+      )
     })
   }
 
@@ -36,7 +41,7 @@ export function renderFavorites(el, ctx) {
         <div class="list-row__meta">${escapeHtml(store.getBank(f.bankId)?.name || f.bankId)} · ${f.type ? TYPE_LABELS[f.type] : ''}</div>
       </div>
       <div class="list-row__actions">
-        <button class="btn btn--primary" data-practice="${escapeHtml(f.bankId)}">练习</button>
+        <button class="btn btn--primary" data-practice="${escapeHtml(f.bankId)}" data-qid="${escapeHtml(f.questionId)}">练习</button>
         <button class="btn btn--danger" data-remove="${escapeHtml(f.questionId)}">取消收藏</button>
       </div>
     </article>`
