@@ -1,12 +1,13 @@
 import { escapeHtml, showFlash } from '../lib/dom.js'
+import { bindSelection, selectionToolbarHtml } from '../lib/selection.js'
 
 /**
- * 管理员：用户增删改查
- * @param {HTMLElement} el
- * @param {{ api: any, store: any }} ctx
+ * 管理员：用户增删改查 + 多选批量删除
  */
 export async function renderAdmin(el, { api, store }) {
   let editingId = null
+  /** @type {ReturnType<typeof bindSelection> | null} */
+  let selection = null
 
   el.innerHTML = `
     <header class="page-header">
@@ -36,6 +37,7 @@ export async function renderAdmin(el, { api, store }) {
       <h2 class="card__title">用户列表</h2>
       <div class="btn-row" style="margin-bottom:var(--space-3)">
         <button type="button" class="btn btn--ghost" id="btnRefresh">刷新</button>
+        <button type="button" class="btn btn--danger" id="btnBulkDel" disabled>删除所选</button>
       </div>
       <div id="userList"><p class="empty__desc">加载中…</p></div>
     </section>
@@ -48,6 +50,7 @@ export async function renderAdmin(el, { api, store }) {
   const listEl = el.querySelector('#userList')
   const editorCard = el.querySelector('#editorCard')
   const genHint = el.querySelector('#genHint')
+  const btnBulkDel = el.querySelector('#btnBulkDel')
   const meId = store.user?.id
 
   function genPassword(len = 20) {
@@ -63,6 +66,14 @@ export async function renderAdmin(el, { api, store }) {
       return new Date(Number(ts)).toLocaleString()
     } catch {
       return String(ts)
+    }
+  }
+
+  function updateBulkBtn() {
+    const n = selection?.selectedIds().length || 0
+    if (btnBulkDel) {
+      btnBulkDel.disabled = n === 0
+      btnBulkDel.textContent = n ? `删除所选（${n}）` : '删除所选'
     }
   }
 
@@ -128,6 +139,8 @@ export async function renderAdmin(el, { api, store }) {
 
   async function loadUsers() {
     listEl.innerHTML = `<p class="empty__desc">加载中…</p>`
+    selection = null
+    updateBulkBtn()
     try {
       const data = await api.adminListUsers()
       const users = data.users || []
@@ -136,27 +149,35 @@ export async function renderAdmin(el, { api, store }) {
         return
       }
       listEl.innerHTML = `
+        ${selectionToolbarHtml({ actionsHtml: '<span class="muted" id="selHint">可勾选后批量删除</span>' })}
         <div class="list">
           ${users
-            .map(
-              (u) => `
-            <div class="list-row" data-id="${escapeHtml(u.id)}">
+            .map((u) => {
+              const locked = u.id === meId
+              return `
+            <div class="list-row" data-select-id="${escapeHtml(u.id)}" data-id="${escapeHtml(u.id)}">
+              <label class="sel-check">
+                <input type="checkbox" data-select value="${escapeHtml(u.id)}" ${locked ? 'disabled title="不能删除自己"' : ''} />
+              </label>
               <div class="list-row__main">
                 <div class="list-row__title">${escapeHtml(u.username)}${
                   u.isAdmin ? ' <span class="badge badge--public">管理员</span>' : ''
-                }${u.id === meId ? ' <span class="badge">我</span>' : ''}</div>
+                }${locked ? ' <span class="badge">我</span>' : ''}</div>
                 <div class="list-row__meta">${escapeHtml(u.id)} · ${escapeHtml(formatTime(u.createdAt))}</div>
               </div>
               <div class="list-row__actions">
                 <button type="button" class="btn btn--ghost" data-act="edit">编辑</button>
                 <button type="button" class="btn btn--danger" data-act="del" ${
-                  u.id === meId ? 'disabled title="不能删除自己"' : ''
+                  locked ? 'disabled title="不能删除自己"' : ''
                 }>删除</button>
               </div>
-            </div>`,
-            )
+            </div>`
+            })
             .join('')}
         </div>`
+
+      selection = bindSelection(listEl, { onChange: updateBulkBtn })
+      updateBulkBtn()
 
       listEl.querySelectorAll('[data-act="edit"]').forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -191,6 +212,26 @@ export async function renderAdmin(el, { api, store }) {
       listEl.innerHTML = `<p class="empty__desc">${escapeHtml(e.message || '加载失败')}</p>`
     }
   }
+
+  el.querySelector('#btnBulkDel')?.addEventListener('click', async () => {
+    const ids = (selection?.selectedIds() || []).filter((id) => id !== meId)
+    if (!ids.length) return
+    if (!confirm(`确定删除选中的 ${ids.length} 个用户？不可恢复。`)) return
+    let ok = 0
+    const errors = []
+    for (const id of ids) {
+      try {
+        await api.adminDeleteUser(id)
+        ok++
+        if (editingId === id) closeEditor()
+      } catch (e) {
+        errors.push(e.message || id)
+      }
+    }
+    if (ok) showFlash(flash, `已删除 ${ok} 个用户${errors.length ? `，失败 ${errors.length}` : ''}`, errors.length ? 'err' : 'ok')
+    else showFlash(flash, errors[0] || '删除失败', 'err')
+    await loadUsers()
+  })
 
   el.querySelector('#btnGenPass')?.addEventListener('click', () => {
     const pwd = genPassword()

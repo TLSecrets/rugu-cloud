@@ -1,5 +1,6 @@
 import { escapeHtml, showFlash } from '../lib/dom.js'
 import { TYPE_LABELS } from '../lib/grade.js'
+import { bindSelection, selectionToolbarHtml } from '../lib/selection.js'
 
 const KEYS = 'abcdefghijklmnopqrstuvwxyz'.split('')
 
@@ -67,16 +68,31 @@ export async function renderQuestions(el, { store, route, navigate, api }) {
         <div class="btn-row" style="margin-top:0">
           <button type="button" class="btn btn--ghost" id="btnBack">返回题库</button>
           ${writable ? '<button type="button" class="btn btn--primary" id="btnNew">新建题目</button>' : ''}
+          ${writable && qs.length ? '<button type="button" class="btn btn--danger" id="btnBulkDel" disabled>删除所选</button>' : ''}
         </div>
         <div id="qList">${
           qs.length
-            ? qs.map((q, i) => qRow(q, i)).join('')
+            ? `${writable ? selectionToolbarHtml() : ''}<div class="list">${qs.map((q, i) => qRow(q, i)).join('')}</div>`
             : '<div class="empty"><p class="empty__title">暂无题目</p><p class="empty__desc">可新建或前往导入导出批量导入。</p></div>'
         }</div>
       </section>
       <section class="card" id="qEditor" hidden></section>`
 
     if (flashMsg) showFlash(el.querySelector('#qFlash'), flashMsg, flashType || 'ok')
+
+    const bulkBtn = el.querySelector('#btnBulkDel')
+    const listRoot = el.querySelector('#qList')
+    let selection = null
+    if (writable && qs.length && listRoot) {
+      selection = bindSelection(listRoot, {
+        onChange: (ids) => {
+          if (bulkBtn) {
+            bulkBtn.disabled = !ids.length
+            bulkBtn.textContent = ids.length ? `删除所选（${ids.length}）` : '删除所选'
+          }
+        },
+      })
+    }
 
     el.querySelector('#btnBack')?.addEventListener('click', () => navigate('/banks'))
     el.querySelector('#btnNew')?.addEventListener('click', () => openEditor(null))
@@ -86,10 +102,35 @@ export async function renderQuestions(el, { store, route, navigate, api }) {
     el.querySelectorAll('[data-del]').forEach((btn) => {
       btn.addEventListener('click', () => void deleteQ(btn.dataset.del))
     })
+    bulkBtn?.addEventListener('click', async () => {
+      const ids = selection?.selectedIds() || []
+      if (!ids.length) return
+      if (!confirm(`确定删除选中的 ${ids.length} 道题？`)) return
+      let ok = 0
+      for (const id of ids) {
+        try {
+          await api.deleteQuestion(id)
+          ok++
+          if (editingId === id) {
+            editingId = null
+            draft = null
+          }
+        } catch {
+          /* continue */
+        }
+      }
+      await paint(ok ? `已删除 ${ok} 道题` : '删除失败', ok ? 'ok' : 'err')
+      await store.refreshBanks()
+    })
   }
 
   function qRow(q, i) {
-    return `<article class="list-row">
+    return `<article class="list-row" data-select-id="${escapeHtml(q.id)}">
+      ${
+        writable
+          ? `<label class="sel-check"><input type="checkbox" data-select value="${escapeHtml(q.id)}" /></label>`
+          : ''
+      }
       <div class="list-row__main">
         <div class="list-row__title"><span class="badge">${i + 1}</span> ${escapeHtml((q.stem || '').slice(0, 100))}${(q.stem || '').length > 100 ? '…' : ''}</div>
         <div class="list-row__meta">${TYPE_LABELS[q.type] || q.type}${q.tags?.length ? ` · ${escapeHtml(q.tags.join(', '))}` : ''}</div>

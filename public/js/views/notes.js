@@ -1,5 +1,6 @@
 import { escapeHtml } from '../lib/dom.js'
 import { TYPE_LABELS } from '../lib/grade.js'
+import { bindSelection, selectionToolbarHtml } from '../lib/selection.js'
 
 export function renderNotes(el, ctx) {
   const { store, navigate, api } = ctx
@@ -14,9 +15,30 @@ export function renderNotes(el, ctx) {
         <p class="page-header__desc">在练习侧栏为本题写笔记；此处可编辑或删除。云端同步。</p>
       </header>
       <section class="card">
-        ${notes.length ? notes.map((n) => noteRow(n)).join('') : '<div class="empty"><p class="empty__title">暂无笔记</p><p class="empty__desc">进入练习后，在右侧「本题笔记」保存即可。</p></div>'}
+        ${
+          notes.length
+            ? `${selectionToolbarHtml({
+                actionsHtml: `<button type="button" class="btn btn--danger" id="btnBulkDel" disabled>删除所选</button>`,
+              })}
+            <div class="list">${notes.map((n) => noteRow(n)).join('')}</div>`
+            : '<div class="empty"><p class="empty__title">暂无笔记</p><p class="empty__desc">进入练习后，在右侧「本题笔记」保存即可。</p></div>'
+        }
       </section>
       <section class="card" id="editor" hidden></section>`
+
+    const card = el.querySelector('.card')
+    const bulkBtn = el.querySelector('#btnBulkDel')
+    let selection = null
+    if (notes.length && card) {
+      selection = bindSelection(card, {
+        onChange: (ids) => {
+          if (bulkBtn) {
+            bulkBtn.disabled = !ids.length
+            bulkBtn.textContent = ids.length ? `删除所选（${ids.length}）` : '删除所选'
+          }
+        },
+      })
+    }
 
     el.querySelectorAll('[data-edit]').forEach((btn) => {
       btn.addEventListener('click', () => openEditor(btn.dataset.edit))
@@ -36,6 +58,19 @@ export function renderNotes(el, ctx) {
         await paint()
       })
     })
+    bulkBtn?.addEventListener('click', async () => {
+      const ids = selection?.selectedIds() || []
+      if (!ids.length) return
+      if (!confirm(`删除选中的 ${ids.length} 条笔记？`)) return
+      for (const questionId of ids) {
+        try {
+          await api.removeNote(questionId)
+        } catch {
+          /* continue */
+        }
+      }
+      await paint()
+    })
   }
 
   function noteRow(n) {
@@ -44,7 +79,8 @@ export function renderNotes(el, ctx) {
       ? `${stem.slice(0, 80)}${stem.length > 80 ? '…' : ''}`
       : `${n.content.slice(0, 80)}${n.content.length > 80 ? '…' : ''}`
     const typeLabel = n.type ? TYPE_LABELS[n.type] || n.type : ''
-    return `<article class="list-row">
+    return `<article class="list-row" data-select-id="${escapeHtml(n.questionId)}">
+      <label class="sel-check"><input type="checkbox" data-select value="${escapeHtml(n.questionId)}" /></label>
       <div class="list-row__main">
         <div class="list-row__title">${escapeHtml(title)}</div>
         <div class="list-row__meta">${escapeHtml(store.getBank(n.bankId)?.name || n.bankId)}${typeLabel ? ` · ${typeLabel}` : ''} · ${escapeHtml(n.content.slice(0, 40))}${n.content.length > 40 ? '…' : ''}</div>

@@ -1,5 +1,6 @@
 import { escapeHtml, showFlash, bankLabel } from '../lib/dom.js'
 import { bankMatchesTags, normalizeBankTags, bankTagMatchModeLabel } from '../lib/bankTags.js'
+import { bindSelection, selectionToolbarHtml } from '../lib/selection.js'
 
 export function renderBanks(el, ctx) {
   const { store, navigate, api } = ctx
@@ -25,13 +26,32 @@ export function renderBanks(el, ctx) {
       <section class="card">
         <div class="btn-row" style="margin-top:0">
           <button class="btn btn--primary" id="btnCreate">新建题库</button>
+          ${filtered.length ? '<button type="button" class="btn btn--danger" id="btnBulkDel" disabled>删除所选</button>' : ''}
         </div>
         ${allTags.length ? `<div class="tag-row">${allTags.map((t) => `<button type="button" class="chip chip--click ${tagFilter.includes(t) ? 'chip--on' : ''}" data-tag="${escapeHtml(t)}">${escapeHtml(t)}</button>`).join('')}${tagFilter.length ? `<button class="btn btn--ghost" id="clearTags">清除筛选</button>` : ''}</div>` : ''}
-        <div id="bankList">${filtered.length ? filtered.map((b) => bankRow(b)).join('') : '<div class="empty"><p class="empty__title">暂无题库</p><p class="empty__desc">点击「新建题库」或前往导入导出页批量导入。</p></div>'}</div>
+        <div id="bankList">${
+          filtered.length
+            ? `${selectionToolbarHtml()}<div class="list">${filtered.map((b) => bankRow(b)).join('')}</div>`
+            : '<div class="empty"><p class="empty__title">暂无题库</p><p class="empty__desc">点击「新建题库」或前往导入导出页批量导入。</p></div>'
+        }</div>
       </section>
       <section class="card" id="editor" hidden></section>`
 
     if (flashMsg) showFlash(el.querySelector('#banksFlash'), flashMsg, flashType || 'ok')
+
+    const listRoot = el.querySelector('#bankList')
+    const bulkBtn = el.querySelector('#btnBulkDel')
+    let selection = null
+    if (filtered.length && listRoot) {
+      selection = bindSelection(listRoot, {
+        onChange: (ids) => {
+          if (bulkBtn) {
+            bulkBtn.disabled = !ids.length
+            bulkBtn.textContent = ids.length ? `删除所选（${ids.length}）` : '删除所选'
+          }
+        },
+      })
+    }
 
     el.querySelector('#btnCreate')?.addEventListener('click', () => openEditor(null))
     el.querySelector('#clearTags')?.addEventListener('click', () => {
@@ -61,11 +81,28 @@ export function renderBanks(el, ctx) {
     el.querySelectorAll('[data-questions]').forEach((btn) => {
       btn.addEventListener('click', () => navigate('/questions', { bankId: btn.dataset.questions }))
     })
+    bulkBtn?.addEventListener('click', async () => {
+      const ids = selection?.selectedIds() || []
+      if (!ids.length) return
+      if (!confirm(`确定删除选中的 ${ids.length} 个题库？题目将一并删除。`)) return
+      let ok = 0
+      for (const id of ids) {
+        try {
+          await api.deleteBank(id)
+          store.invalidateQuestions(id)
+          ok++
+        } catch {
+          /* continue */
+        }
+      }
+      await paint(ok ? `已删除 ${ok} 个题库` : '删除失败', ok ? 'ok' : 'err')
+    })
   }
 
   function bankRow(b) {
     const tags = normalizeBankTags(b.tags)
-    return `<article class="list-row" data-id="${escapeHtml(b.id)}">
+    return `<article class="list-row" data-select-id="${escapeHtml(b.id)}" data-id="${escapeHtml(b.id)}">
+      <label class="sel-check"><input type="checkbox" data-select value="${escapeHtml(b.id)}" /></label>
       <div class="list-row__main">
         <div class="list-row__title">${escapeHtml(b.name)}${b.isPublic ? ' <span class="badge badge--public">公共</span>' : ''}</div>
         <div class="list-row__meta">${escapeHtml(b.description || '无描述')} · ${b.questionCount ?? 0} 题</div>

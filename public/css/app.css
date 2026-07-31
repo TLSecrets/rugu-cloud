@@ -701,6 +701,22 @@ img {
   flex-wrap: wrap;
   gap: var(--space-2);
 }
+.sel-check {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.sel-check input {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+.sel-toolbar {
+  margin-bottom: var(--space-3);
+  align-items: center;
+}
+.sel-all {
+  margin: 0 !important;
+}
 
 .badge {
   display: inline-block;
